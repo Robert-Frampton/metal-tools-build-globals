@@ -2,9 +2,13 @@
 
 var assert = require('assert');
 var babelDeps = require('babel-deps');
-var buildGlobalsNoSourceMaps = require('../../../lib/pipelines/buildGlobalsNoSourceMaps');
+var buildGlobals = require('../../../lib/pipelines/buildGlobals');
 var consume = require('stream-consume');
 var vfs = require('vinyl-fs');
+
+var defaultOptions = {
+	sourceMaps: false
+};
 
 describe('Pipeline - Build to globals with no source maps', function() {
 	beforeEach(function() {
@@ -13,10 +17,10 @@ describe('Pipeline - Build to globals with no source maps', function() {
 
 	it('should build js files to a single bundle', function(done) {
 		var stream = vfs.src('test/fixtures/js/foo.js')
-      .pipe(buildGlobalsNoSourceMaps());
+			.pipe(buildGlobals(defaultOptions));
 
 		var files = [];
-    stream.on('data', function(file) {
+		stream.on('data', function(file) {
 			files.push(file.relative);
 		});
 		stream.on('end', function() {
@@ -29,11 +33,12 @@ describe('Pipeline - Build to globals with no source maps', function() {
 
 	it('should build js files to single bundle with the specified filename', function(done) {
 		var stream = vfs.src('test/fixtures/js/foo.js')
-      .pipe(buildGlobalsNoSourceMaps({
-				bundleFileName: 'foo.js'
+			.pipe(buildGlobals({
+				bundleFileName: 'foo.js',
+				sourceMaps: false
 			}));
 
-    stream.on('data', function(file) {
+		stream.on('data', function(file) {
 			assert.strictEqual('foo.js', file.relative);
 			done();
 		});
@@ -41,24 +46,25 @@ describe('Pipeline - Build to globals with no source maps', function() {
 
 	it('should publish exported variables on global', function(done) {
 		var stream = vfs.src('test/fixtures/js/foo.js')
-      .pipe(buildGlobalsNoSourceMaps());
+			.pipe(buildGlobals(defaultOptions));
 
-    stream.on('data', function(file) {
+		stream.on('data', function(file) {
 			var contents = file.contents.toString();
-			assert.notStrictEqual(-1, contents.indexOf('this.metal.foo = Foo;'));
+			assert.notStrictEqual(-1, contents.indexOf('this["metal"] ='));
 			done();
 		});
 	});
 
 	it('should publish exported variables on specified global', function(done) {
 		var stream = vfs.src('test/fixtures/js/foo.js')
-      .pipe(buildGlobalsNoSourceMaps({
-				globalName: 'bar'
+			.pipe(buildGlobals({
+				globalName: 'bar',
+				sourceMaps: false
 			}));
 
-    stream.on('data', function(file) {
+		stream.on('data', function(file) {
 			var contents = file.contents.toString();
-			assert.notStrictEqual(-1, contents.indexOf('this.bar.foo = Foo;'));
+			assert.notStrictEqual(-1, contents.indexOf('this["bar"] ='));
 			done();
 		});
 	});
